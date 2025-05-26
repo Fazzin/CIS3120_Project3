@@ -10,7 +10,7 @@ from the Spoonacular API and customizes it using the llama3 model
 '''
 import gradio as gr
 import re
-from .PROJECT3.spoonacular_recipe import recipe_by_ingredients, is_valid_ingredient
+from .spoonacular_recipe import recipe_by_ingredients, is_valid_ingredient
 from .ai_recipe import llama_recipe
 
 #Filtering any bad inputs
