@@ -13,23 +13,27 @@ from dotenv import load_dotenv
 load_dotenv()
 api_key = os.getenv('spoonacular_API') #Loads api key
     
-#Checks if user's ingredient is in the database
+#Checks if user's ingredient is in the database 
 def is_valid_ingredient(ingredient_name):
-    url = 'https://api.spoonacular.com/food/ingredients/autocomplete'
-    params = {
-        'query': ingredient_name,
-        'number': 1,
-        'apiKey': api_key
-    }
-    response = requests.get(url, params=params)
-    if response.status_code != 200:
+    try: 
+        url = 'https://api.spoonacular.com/food/ingredients/autocomplete'
+        params = {
+            'query': ingredient_name,
+            'number': 1,
+            'apiKey': api_key
+        }
+        response = requests.get(url, params=params)
+        if response.status_code != 200:
+            return False
+        results = response.json()
+        #Checks if the result matches with the ingredient
+        return len(results) > 0
+    except Exception as e:
+        print(f"Validation error for {ingredient_name}: {e}")
         return False
-    results = response.json()
-    #Checks if the result matches with the ingredient
-    return bool(results and results[0]['name'].lower() == ingredient_name.lower())
 
 #Converts ingredient entered by user into recipes found by spoonacular's API
-def recipe_by_ingredients(ingredients, max_results=5):
+def recipe_by_ingredients(ingredients, max_results=10):
     #Ensures there are no whitespace or incorrect casing by stripping and lowering cases
     if isinstance(ingredients, list):
         ingredients = ','.join([item.strip().lower() for item in ingredients])
@@ -44,7 +48,7 @@ def recipe_by_ingredients(ingredients, max_results=5):
     url = 'https://api.spoonacular.com/recipes/findByIngredients'
     params = {
         'ingredients': ingredients,
-        'number': max_results, #Maximum number of recipes returned (5)
+        'number': max_results, #Maximum number of recipes returned (10)
         'ranking': 1,
         'apiKey': api_key
     }
@@ -53,7 +57,6 @@ def recipe_by_ingredients(ingredients, max_results=5):
     response = requests.get(url, params=params)
     if response.status_code != 200:
         return [f'Error: {response.status_code} - {response.text}']
-
     try:
         results = response.json()
         #Extracts the recipe's title from the response
