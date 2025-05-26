@@ -26,8 +26,8 @@ Step-by-step cooking instructions,
 Estimated time,
 Difficulty level,
 '''
-try:#Gets a response from the llama3 model 
-    response = ollama.chat(model='llama3', messages=[{'role': 'user', 'content': prompt}])#Returns actual generated text from llama model
-    return response['message']['content']
-except Exception as e:
-    return f'Error: {str(e)}'
+    try:#Gets a response from the llama3 model 
+        response = ollama.chat(model='llama3', messages=[{'role': 'user', 'content': prompt}])#Returns actual generated text from llama model
+        return response['message']['content']
+    except Exception as e:
+        return f'Error: {str(e)}'
