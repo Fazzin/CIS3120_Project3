@@ -10,7 +10,7 @@ from the Spoonacular API and customizes it using the llama3 model
 '''
 import gradio as gr
 import re
-from .spoonacular_recipe import recipe_by_ingredients, is_valid_ingredient
+from ...PROJECT3.spoonacular_recipe import recipe_by_ingredients, is_valid_ingredient
 from .ai_recipe import llama_recipe
 
 #Filtering any bad inputs
@@ -36,43 +36,70 @@ def has_invalid_characters(text):
 def recipe(user_input):
     #Rejects any blank inputs
     if not user_input.strip():
-        return 'Please enter ingredients', None
+        return gr.update(choices=[], visible=False), gr.update(visible=False), "", "", "Please enter ingredients."
     #Rejects any inputs not containing letters or commas
     if has_invalid_characters(user_input):
-        return 'Please use letters and commas only', None
+        return gr.update(choices=[], visible=False), gr.update(visible=False), "", "", "Only letters and commas allowed."
     #Clean any other inputs by filtering
     ingredients = filtered_input(user_input)
-    #Rejects blank inputs
-    if not ingredients:
-        return 'Enter valid ingredients', None
-    #Ensures there are at least two ingredients
-    if len(ingredients.split(',')) < 2:
-        return 'Please enter at least two valid ingredients (e.g., onion, garlic)', None
-    
+    #Rejects blank inputs & ensures there are at least two ingredients
+    if not ingredients or len(ingredients.split(',')) < 2:
+        return gr.update(choices=[], visible=False), gr.update(visible=False), "", "", "Enter at least two valid ingredients."
+
     ingredients_list = ingredients.split(',')
     invalid_items = [item for item in ingredients_list if not is_valid_ingredient(item)]
     if invalid_items:
-        return f'The following ingredients are not recognized by Spoonacular API: {', '.join(invalid_items)}', None
+        return gr.update(choices=[], visible=False), gr.update(visible=False), "", "", f"Invalid ingredients: {', '.join(invalid_items)}."
     #Recipe list is fetched from the Spoonacular API
     recipes = recipe_by_ingredients(ingredients)
 
-    #Handles any errors or no results 
-    if not recipes or isinstance(recipes, str) or f'{ingredients} are not valid ingredients' in recipes[0].lower() or 'error' in recipes[0].lower():
-        return f"Base Recipe: {recipes[0] if isinstance(recipes, list) else recipes}", ""
+    if not recipes or isinstance(recipes, str):
+        return gr.update(choices=[], visible=False), gr.update(visible=False), "", "", "No recipes found."
 
-    base_recipe = recipes[0]
-    customized_recipe = llama_recipe(base_recipe, ingredients)
-    return f'Base Recipe: {base_recipe}', customized_recipe
+    return gr.update(choices=recipes, visible=True), gr.update(visible=True), "", "", "Select a recipe to customize."
+
+def customize_selected_recipe(recipe_title, user_input):
+    #Uses llama3 to customize the selected recipe based on ingredients.
+    if not recipe_title:
+        return "", "Please select a recipe to customize."
+    ingredients = filtered_input(user_input)
+    try:
+        ai_recipe = llama_recipe(recipe_title, ingredients)
+        return (
+    gr.update(value=f"Base Recipe: {recipe_title}", visible=True),
+    gr.update(value=ai_recipe, visible=True),
+    "Recipe successfully customized."
+    )
+    except Exception as e:
+        return "", "", f"An error occurred while generating the recipe: {str(e)}"
 
 
 #Creating the interface
-food_interface = gr.Interface(
-    fn = recipe,
-    inputs = gr.Textbox(lines = 3, label = 'Enter your ingredients (includes commas)', placeholder='e.g., onion, garlic, milk'),
-    outputs = [gr.Textbox(label='Base Recipe'), gr.Textbox(label='Modified Recipe')],
-    title = 'Custom Food Recipe Generator', #Interface title
-    description = 'Creates recipes based on the ingredients then AI customizes it by adding variations or additional ingredients' #Interface description
-)
+with gr.Blocks() as food_interface:
+    gr.Markdown("# 🍲 Custom Food Recipe Generator: Pick and Customize a Recipe")
+
+    with gr.Row():
+        ingredient_input = gr.Textbox(label="Enter ingredients", placeholder="e.g. beef, pasta, onion, garlic", lines=3)
+        find_button = gr.Button("Find Recipes")
+
+    recipe_dropdown = gr.Dropdown(label="Select a Recipe", choices=[], visible=False)
+    customize_button = gr.Button("Customize with AI", visible=False)
+
+    base_output = gr.Textbox(label="Base Recipe", visible=False)
+    ai_output = gr.Textbox(label="Modified Recipe", visible=False)
+    error_box = gr.Textbox(label="Status / Errors", interactive=False)
+
+    find_button.click(
+        recipe,
+        inputs=ingredient_input,
+        outputs=[recipe_dropdown, customize_button, base_output, ai_output, error_box]
+    )
+
+    customize_button.click(
+        customize_selected_recipe,
+        inputs=[recipe_dropdown, ingredient_input],
+        outputs=[base_output, ai_output, error_box]
+    )
 
 if __name__ == '__main__':
     food_interface.launch(share=True)
