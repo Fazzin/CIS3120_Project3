@@ -10,11 +10,11 @@
 This custom food recipe generator creates custom recipes based on the user's ingredients.   
 It does this by getting a matching recipe from the Spoonacular API and using LLama3 to creatively customize recipes with variations  
 The custom recipe provides:  
-New recipe name  
-Ingredient list  
-Cooking instructions  
-Time estimate  
-Difficulty rating  
+- New recipe name  
+- Ingredient list  
+- Cooking instructions  
+- Time estimate  
+- Difficulty rating  
 ## Making sure Ollama is set up for llama3
 ###  Install Ollama (if not already)
 https://ollama.com/download
